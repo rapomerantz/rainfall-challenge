@@ -4,23 +4,13 @@ const input3 = '5 1 0 2 5 8 2 3 4 7 9 3 5 7 8 9 1 2 5 4 3 3 3 5 2 1'
 const input4 = '4 0 2 1 3 2 1 0 4 3 3 3 3 5 5 2 1'
 
 class BasinFinderService {
-  clearResults() {
-    this.result = '';
-    this.basins = {};
-    this.matrix = [];
-    this.matrixSize = null;
-  }
-
-  findBasins(inputString) {
-    this.clearResults();
-
-    const inputArray = inputString.split(' ');
-    this.matrixSize = inputArray.shift();
-    this.matrix = this.parseInputToMatrix(inputArray);
+  findBasins(input) {
+    input = input.split(' ');
+    this.matrixSize = input.shift();
+    this.matrix = this.parseInputToMatrix(input);
     this.processMatrix();
-    this.buildResult();
 
-    return this.result;
+    return this.buildResultString();
   }
 
   parseInputToMatrix(inputArray) {
@@ -35,62 +25,72 @@ class BasinFinderService {
     return matrix;
   }
 
+  //for each node, find its sink & record it as a destination in basins obj.
   processMatrix() {
+    this.basins = {};
+
     for (let y = 0; y < this.matrixSize; y++) {
       for (let x = 0; x < this.matrixSize; x++) {
-        this.recordNodeDestination(y, x);
+        this.findNodeDestination(y, x);
       }
     }
   }
 
-  recordNodeDestination(y, x) {
+  findNodeDestination(y, x) {
+    //assume initial state is lowest
     let lowestCoordinates = [y, x];
     let lowestValue = this.matrix[y][x];
-    //check left
+
+    //left
     if (x - 1 >= 0 && this.matrix[y][x - 1] < lowestValue) {
       lowestCoordinates = [y, x - 1];
       lowestValue = this.matrix[y][x - 1];
     }
-    //check right
+    //right
     if (x + 1 <= this.matrixSize - 1 && this.matrix[y][x + 1] < lowestValue) {
       lowestCoordinates = [y, x + 1];
       lowestValue = this.matrix[y][x + 1];
     }
-    //check up
+    //up
     if (y - 1 >= 0 && this.matrix[y - 1][x] < lowestValue) {
       lowestCoordinates = [y - 1, x];
       lowestValue = this.matrix[y - 1][x];
     }
-    //check down
+    //down
     if (y + 1 <= this.matrixSize - 1 && this.matrix[y + 1][x] < lowestValue) {
       lowestCoordinates = [y + 1, x];
     }
-    //else, i am lowest
+    //else, i am lowest & should be recorded
     if (lowestCoordinates[0] === y && lowestCoordinates[1] === x) {
-      //build key-value pair of sink & track squares that feed into it
-      let basinKey = `${y}-${x}`;
-      if (basinKey in this.basins) {
-        this.basins[basinKey]++;
-        return;
-      }
-
-      this.basins[basinKey] = 1;
+      this.recordDestination(y, x);
       return;
     }
-
-    this.recordNodeDestination(lowestCoordinates[0], lowestCoordinates[1]);
+    //else, recurse
+    this.findNodeDestination(lowestCoordinates[0], lowestCoordinates[1]);
   }
 
-  buildResult() {
-    let resultAsArray = [];
-    Object.keys(this.basins).forEach((key) => {
-      resultAsArray.push(this.basins[key]);
+  recordDestination(y, x) {
+    let basinKey = `${y}-${x}`;
+    if (basinKey in this.basins) {
+      this.basins[basinKey]++;
+    } else {
+      this.basins[basinKey] = 1;
+    }
+  }
+
+  buildResultString() {
+    let basinValues = [];
+    let resultString = '';
+    Object.keys(this.basins).forEach((basinKey) => {
+      basinValues.push(this.basins[basinKey]);
     })
 
-    resultAsArray.sort((a, b) => a - b).reverse();
-    resultAsArray.forEach((resultItem) => {
-      this.result = `${this.result} ${resultItem}`
+    basinValues.sort((a, b) => a - b).reverse();
+    basinValues.forEach((basinValue) => {
+      resultString = `${resultString} ${basinValue}`
     })
+
+    return resultString;
   }
 }
 
